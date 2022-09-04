@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Scan Me Calculator</string>
+    <string name="label_add_input">Add Input</string>
+    <string name="error_something_went_wrong">Something went wrong</string>
+    <string name="label_take_picture">Take picture</string>
+    <string name="label_select_image">Select image</string>
+</resources>
