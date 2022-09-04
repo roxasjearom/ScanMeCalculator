@@ -15,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognizer
 import com.roxasjearom.scanmecalculator.BuildConfig
 import com.roxasjearom.scanmecalculator.R
 import com.roxasjearom.scanmecalculator.databinding.FragmentHomeBinding
@@ -24,6 +25,7 @@ import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeFragment : Fragment() {
@@ -35,17 +37,28 @@ class HomeFragment : Fragment() {
 
     private var imageUri: Uri? = null
 
+    @Inject
+    lateinit var recognizer: TextRecognizer
+
     private val takeImageFromCameraResult =
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) {
-                imageUri?.let { viewModel.recognizeText(createInputImage(it)) }
+                imageUri?.let { imageUri ->
+                    createInputImage(imageUri)?.let { inputImage ->
+                        getTextResult(inputImage)
+                    }
+                }
             } else {
-                Toast.makeText(requireContext(), getString(R.string.error_something_went_wrong), Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.error_capture_image_cancelled), Toast.LENGTH_SHORT).show()
             }
         }
 
     private val selectImageFromGalleryResult = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let { viewModel.recognizeText(createInputImage(it)) }
+        uri?.let { imageUri ->
+            createInputImage(imageUri)?.let { inputImage ->
+                getTextResult(inputImage)
+            }
+        }
     }
 
     override fun onCreateView(
@@ -79,6 +92,29 @@ class HomeFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun getTextResult(inputImage: InputImage) {
+        recognizer.process(inputImage)
+            .addOnSuccessListener { result ->
+                if(result.textBlocks.isEmpty()) {
+                    showNoResultFound()
+                    return@addOnSuccessListener
+                }
+                for (block in result.textBlocks) {
+                    val textLines = block.lines.map { it.text }
+                    viewModel.validateLines(textLines)
+                }
+            }
+            .addOnFailureListener { e ->
+                e.printStackTrace()
+                showNoResultFound()
+            }
+    }
+
+    private fun showNoResultFound() {
+        binding.inputTextView.text = getString(R.string.message_no_valid_input_found)
+        binding.resultTextView.text = getString(R.string.message_no_result_to_show)
     }
 
     private fun getButtonLabel(): String {

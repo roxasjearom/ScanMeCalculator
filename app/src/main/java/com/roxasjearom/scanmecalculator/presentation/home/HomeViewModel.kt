@@ -1,11 +1,8 @@
 package com.roxasjearom.scanmecalculator.presentation.home
 
-import android.util.Log
+import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,37 +18,31 @@ class HomeViewModel @Inject constructor() : ViewModel() {
         initialValue = _homeUiState.value
     )
 
-    fun recognizeText(inputImage: InputImage?) {
+    fun validateLines(textLines: List<String>) {
         viewModelScope.launch {
-            inputImage?.let {
-                val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-                recognizer.process(inputImage)
-                    .addOnSuccessListener { result ->
-                        for (block in result.textBlocks) {
-                            for (line in block.lines) {
-                                Log.e("LINE", line.text)
-                                if (isInputValid(line.text)) {
-                                    _homeUiState.update {
-                                        it.copy(
-                                            input = line.text,
-                                            result = getOperationResult(line.text)
-                                        )
-                                    }
-                                    return@addOnSuccessListener
-                                }
-                            }
-                        }
+            for (textLine in textLines) {
+                if (isInputValid(textLine)) {
+                    _homeUiState.update { uiState ->
+                        uiState.copy(
+                            input = textLine,
+                            result = getOperationResult(textLine)
+                        )
                     }
-                    .addOnFailureListener { e ->
-                        e.printStackTrace()
-                    }
+                    return@launch
+                }
+            }
+            _homeUiState.update { uiState ->
+                uiState.copy(
+                    input = "No valid input found",
+                    result = "No result to show",
+                )
             }
         }
     }
 
     private fun isInputValid(input: String): Boolean {
         val splitInput = input.replace(" ", "").split('/', '*', '+', '-')
-        return splitInput.size == 2
+        return splitInput.size == 2 && splitInput.all { it.isDigitsOnly() }
     }
 
     private fun getOperationResult(equation: String): String {
@@ -77,4 +68,5 @@ class HomeViewModel @Inject constructor() : ViewModel() {
 data class HomeUiState(
     val input: String = "",
     val result: String = "",
+    val hasNoResult: Boolean = false,
 )

@@ -1,7 +1,9 @@
 <resources>
     <string name="app_name">Scan Me Calculator</string>
     <string name="label_add_input">Add Input</string>
-    <string name="error_something_went_wrong">Something went wrong</string>
+    <string name="error_capture_image_cancelled">Capture image cancelled</string>
     <string name="label_take_picture">Take picture</string>
     <string name="label_select_image">Select image</string>
+    <string name="message_no_valid_input_found">No valid input found</string>
+    <string name="message_no_result_to_show">No result to show</string>
 </resources>
