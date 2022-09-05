@@ -3,7 +3,9 @@ package com.roxasjearom.scanmecalculator.presentation.home
 import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.roxasjearom.scanmecalculator.utils.removeSpace
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -19,34 +21,33 @@ class HomeViewModel @Inject constructor() : ViewModel() {
     )
 
     fun validateLines(textLines: List<String>) {
-        viewModelScope.launch {
-            for (textLine in textLines) {
-                if (isInputValid(textLine)) {
+        viewModelScope.launch(Dispatchers.IO) {
+            textLines.forEach { textLine ->
+                if (isInputValid(textLine.removeSpace())) {
                     _homeUiState.update { uiState ->
                         uiState.copy(
-                            input = textLine,
-                            result = getOperationResult(textLine)
+                            textResult = TextResult.Success(
+                                input = textLine,
+                                result = getOperationResult(textLine)
+                            ),
                         )
                     }
                     return@launch
                 }
             }
             _homeUiState.update { uiState ->
-                uiState.copy(
-                    input = "No valid input found",
-                    result = "No result to show",
-                )
+                uiState.copy(textResult = TextResult.NoResultFound)
             }
         }
     }
 
     private fun isInputValid(input: String): Boolean {
-        val splitInput = input.replace(" ", "").split('/', '*', '+', '-')
-        return splitInput.size == 2 && splitInput.all { it.isDigitsOnly() }
+        val splitInput = input.split('/', '*', '+', '-')
+        return splitInput.size == 2 && splitInput.all { it.isDigitsOnly() && it.isNotEmpty() }
     }
 
     private fun getOperationResult(equation: String): String {
-        val operands = equation.replace(" ", "").split('/', '*', '+', '-').map { it.toInt() }
+        val operands = equation.split('/', '*', '+', '-').map { it.toInt() }
         return when {
             equation.contains("+") -> {
                 (operands[0] + operands[1]).toString()
@@ -66,7 +67,5 @@ class HomeViewModel @Inject constructor() : ViewModel() {
 }
 
 data class HomeUiState(
-    val input: String = "",
-    val result: String = "",
-    val hasNoResult: Boolean = false,
+    val textResult: TextResult = TextResult.InitialState,
 )

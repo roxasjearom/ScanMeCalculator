@@ -14,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import coil.load
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognizer
 import com.roxasjearom.scanmecalculator.BuildConfig
@@ -44,6 +45,7 @@ class HomeFragment : Fragment() {
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) {
                 imageUri?.let { imageUri ->
+                    binding.inputImageView.load(imageUri)
                     createInputImage(imageUri)?.let { inputImage ->
                         getTextResult(inputImage)
                     }
@@ -55,6 +57,7 @@ class HomeFragment : Fragment() {
 
     private val selectImageFromGalleryResult = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { imageUri ->
+            binding.inputImageView.load(imageUri)
             createInputImage(imageUri)?.let { inputImage ->
                 getTextResult(inputImage)
             }
@@ -73,12 +76,13 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setInitialContent()
         binding.addInputButton.text = getButtonLabel()
         binding.addInputButton.setOnClickListener {
             val imageFile = createImageFile()
             imageUri = getImageUri(imageFile)
 
-            if (BuildConfig.FLAVOR_input == "camera") {
+            if (BuildConfig.FLAVOR_input == BUILD_FLAVOR_CAMERA) {
                 takeImageFromCameraResult.launch(imageUri)
             } else {
                 selectImageFromGalleryResult.launch("image/*")
@@ -87,10 +91,40 @@ class HomeFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.homeUiState.collect { uiState ->
-                    binding.inputTextView.text = uiState.input
-                    binding.resultTextView.text = uiState.result
+                    when (uiState.textResult) {
+                        TextResult.InitialState -> {
+                            binding.detailsGroup.visibility = View.GONE
+                            binding.initialGroup.visibility = View.VISIBLE
+
+                            binding.inputTextView.text = ""
+                            binding.resultTextView.text = ""
+                        }
+                        is TextResult.Success -> {
+                            binding.detailsGroup.visibility = View.VISIBLE
+                            binding.initialGroup.visibility = View.GONE
+
+                            binding.inputTextView.text = uiState.textResult.input
+                            binding.resultTextView.text = uiState.textResult.result
+                        }
+                        TextResult.NoResultFound -> {
+                            binding.detailsGroup.visibility = View.VISIBLE
+                            binding.initialGroup.visibility = View.GONE
+
+                            showNoResultFound()
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    private fun setInitialContent() {
+        if (BuildConfig.FLAVOR_input == BUILD_FLAVOR_CAMERA) {
+            binding.instructionImageView.load(R.drawable.ic_camera)
+            binding.instructionTextView.text = getString(R.string.instruction_camera)
+        } else {
+            binding.instructionImageView.load(R.drawable.ic_file_image)
+            binding.instructionTextView.text = getString(R.string.instruction_file)
         }
     }
 
@@ -101,10 +135,13 @@ class HomeFragment : Fragment() {
                     showNoResultFound()
                     return@addOnSuccessListener
                 }
+                val textLines = mutableListOf<String>()
                 for (block in result.textBlocks) {
-                    val textLines = block.lines.map { it.text }
-                    viewModel.validateLines(textLines)
+                    for (line in block.lines) {
+                        textLines.add(line.text)
+                    }
                 }
+                viewModel.validateLines(textLines)
             }
             .addOnFailureListener { e ->
                 e.printStackTrace()
@@ -118,7 +155,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun getButtonLabel(): String {
-        return if (BuildConfig.FLAVOR_input == "camera") {
+        return if (BuildConfig.FLAVOR_input == BUILD_FLAVOR_CAMERA) {
             getString(R.string.label_take_picture)
         } else {
             getString(R.string.label_select_image)
@@ -155,5 +192,9 @@ class HomeFragment : Fragment() {
     override fun onDestroy() {
         super.onDestroy()
         _binding = null
+    }
+
+    companion object {
+        private const val BUILD_FLAVOR_CAMERA = "camera"
     }
 }

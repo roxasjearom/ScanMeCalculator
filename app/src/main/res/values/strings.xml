@@ -1,9 +1,15 @@
 <resources>
-    <string name="app_name">Scan Me Calculator</string>
+    <string name="app_name">Scan Me! Calculator</string>
     <string name="label_add_input">Add Input</string>
     <string name="error_capture_image_cancelled">Capture image cancelled</string>
     <string name="label_take_picture">Take picture</string>
     <string name="label_select_image">Select image</string>
     <string name="message_no_valid_input_found">No valid input found</string>
     <string name="message_no_result_to_show">No result to show</string>
+    <string name="label_detected_input">Detected Input</string>
+    <string name="label_result">Result</string>
+    <string name="instruction_camera">Capture an image containing an equation</string>
+    <string name="instruction_file">Select an image containing an equation</string>
+    <string name="cd_detected_image">Detected image</string>
+    <string name="cd_capture_or_select_image">Capture or select image</string>
 </resources>
