@@ -1,4 +1,4 @@
-# Scan Me!@ Calculator
+# Scan Me! Calculator
 A simple app that allows user to capture arithmetic equations (e.g. 5+5) from image captured using the device's camera or from an image selected from the File system.
 The app demonstrates the use of multiple flavors (build variants). The app can be configured with different theme (red or green) and with different input type (camera or file system).
 
