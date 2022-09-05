@@ -1,8 +1,8 @@
 package com.roxasjearom.scanmecalculator.presentation.home
 
-import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.roxasjearom.scanmecalculator.utils.isDigit
 import com.roxasjearom.scanmecalculator.utils.removeSpace
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +43,7 @@ class HomeViewModel @Inject constructor() : ViewModel() {
 
     private fun isInputValid(input: String): Boolean {
         val splitInput = input.split('/', '*', '+', '-')
-        return splitInput.size == 2 && splitInput.all { it.isDigitsOnly() && it.isNotEmpty() }
+        return splitInput.size == 2 && splitInput.all { it.isDigit() && it.isNotEmpty() }
     }
 
     private fun getOperationResult(equation: String): String {
